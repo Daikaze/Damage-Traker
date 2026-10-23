@@ -47,3 +47,12 @@ In module settings, select **Midi-QOL applied damage**. Requires a Foundry V11-c
 Run: node --test tests/core.test.mjs
 
 The GitHub Actions workflow tests sources and packages a ZIP with module.json, scripts, templates and styles at its root. The manifest's release link requires GitHub Actions to be enabled for the repository.
+
+## v1.0.2 fix
+
+- Windows light dropdown menus now use readable **dark option text**, while the closed select stays dark-themed.
+- **Rolled damage never creates a record**. The standard capture mode is attached to Foundry V11 D&D5e's Apply Damage / Half / Double context-menu actions.
+- Records use **the real HP and temporary HP lost** after the target actor update completes (rather than the rolled number).
+- If the user had the old "rolls" capture mode selected, it now behaves as applied-only; old records are NOT deleted.
+- Single damage types retain their type even if applied damage is reduced or capped. A mixed-type roll that cannot be split exactly after application is stored under **Other / Unknown**, never guessed.
+- Other damage applications from unrelated third-party module buttons, or manual HP edits lacking source attribution, are not inferred.

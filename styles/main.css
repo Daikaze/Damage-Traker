@@ -93,3 +93,25 @@
   outline: 2px solid #f3c67d;
   outline-offset: 1px;
 }
+
+/* Foundry V11 / Windows: native option popups are light, so options MUST
+   use dark text even though the collapsed selector has light text on dark. */
+.damage-hall-app select option,
+.damage-hall-app select optgroup,
+.damage-hall-app .dt-filters select option {
+  color: #20202a !important;
+  background: #f7f5ee !important;
+}
+.damage-hall-app select option:checked {
+  background: #3174be !important;
+  color: #ffffff !important;
+}
+.damage-hall-app select:focus-visible,
+.damage-hall-app button:focus-visible {
+  outline: 2px solid #edc58e;
+  outline-offset: 1px;
+}
+.damage-hall-app button i, .damage-hall-app label i {
+  color: inherit;
+  opacity: 1;
+}

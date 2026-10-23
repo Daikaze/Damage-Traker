@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {DAMAGE_TYPES, extractDamage, leaderboard, filteredDamage} from "../scripts/core.mjs";
+import {appliedTypes,hpLoss} from "../scripts/applied.mjs";
 const roll=(total,type,critical=false)=>({constructor:{name:"DamageRoll"},total,formula:"2d6+3",options:{type,critical}});
 test("all 13 official D&D types are supported",()=>assert.equal(DAMAGE_TYPES.length,13));
 test("separate typed rolls in one message sum and split",()=>{
@@ -44,4 +45,17 @@ test("highest hit, total and best round are independent",()=>{
   assert.deepEqual(leaderboard(rows,"round").map(r=>[r.actorName,r.amount]),[["Sunless",110],["Rashira",75]]);
   assert.deepEqual(leaderboard(rows,"total","slashing").map(r=>[r.actorName,r.amount]),[["Rashira",30]]);
   assert.equal(filteredDamage(rows[0],"fire"),10);
+});
+
+test("records confirmed HP/tempHP loss rather than rolled totals",()=>{
+  assert.equal(hpLoss({hp:35,temp:10},{hp:35,temp:6}),4);
+  assert.equal(hpLoss({hp:35,temp:10},{hp:30,temp:0}),15);
+  assert.equal(hpLoss({hp:35,temp:10},{hp:35,temp:10}),0);
+  assert.equal(hpLoss({hp:35,temp:0},{hp:40,temp:0}),0);
+});
+test("retains one exact type; mixed reductions are unknown",()=>{
+  assert.deepEqual(appliedTypes({fire:24},12,0.5),{fire:12});
+  assert.deepEqual(appliedTypes({fire:10,cold:5},15,1),{fire:10,cold:5});
+  assert.deepEqual(appliedTypes({fire:10,cold:5},7,0.5),{untyped:7});
+  assert.deepEqual(appliedTypes({slashing:10},0),{});
 });

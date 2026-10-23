@@ -1,4 +1,5 @@
 import {DAMAGE_TYPES, ALL_TYPES, TYPE_NAMES, UNKNOWN, number, extractDamage, leaderboard} from "./core.mjs";
+import {installAppliedCapture, readHP, hpLoss} from "./applied.mjs";
 
 const MOD = "damage-traker";
 const SOCKET = "module." + MOD;
@@ -72,25 +73,6 @@ function filteredTypes(types) {
 function totalOf(types) {
   return number(Object.values(types).reduce((acc, value) => acc + number(value), 0));
 }
-function captureChat(message) {
-  if (!isTracking() || !activeGM() || game.settings.get(MOD, "captureMode") !== "rolls") return;
-  if (!message?.id) return;
-  const actor = actorForMessage(message);
-  if (!validActor(actor)) return;
-  const found = extractDamage(message.rolls ?? (message.roll ? [message.roll] : []), messageDamageType(message));
-  if (!found) return;
-  const types = filteredTypes(found.types);
-  const damage = totalOf(types);
-  if (!damage) return;
-  const row = {
-    id:"chat:" + message.id, sourceKey:"chat:" + message.id, source:"roll",
-    actorId:actor.id, actorName:actor.name, damage, types, note:cleanNote(message, actor),
-    critical:found.critical, formula:found.formula,
-    date:message.timestamp ?? Date.now(), ...combatDetails(actor),
-    manualOverride:false
-  };
-  enqueue(() => storeEvents([row]));
-}
 /** Optional Midi-QOL integration, counts one applied-damage event per target.
  * Applied type breakdown is used only if Midi exposes an exact post-resistance
  * per-type object. Otherwise mark applied total "Other / Unknown".
@@ -103,7 +85,16 @@ function midiEvents(workflow) {
   const rows = [];
   const combat = combatDetails(actor);
   for (const [i, target] of workflow.damageList.entries()) {
-    const amount = number(target?.appliedDamage);
+    const reported = number(target?.appliedDamage);
+    if (!reported || target?.wasHit === false || target?.isHit === false) continue;
+    const targetActor = target?.token?.actor ??
+      (target?.tokenId ? canvas.tokens?.get(target.tokenId)?.actor : null) ??
+      (target?.actorId ? game.actors.get(target.actorId) : null);
+    const current = readHP(targetActor);
+    const oldHP = Number(target?.oldHP), oldTempHP = Number(target?.oldTempHP);
+    // Midi may report anticipated damage before GM actually applies it.
+    if (!current || !Number.isFinite(oldHP) || !Number.isFinite(oldTempHP)) continue;
+    const amount = Math.min(reported,hpLoss({hp:oldHP,temp:oldTempHP},current));
     if (!amount) continue;
     const details = target?.appliedDamageDetail;
     let types = {[UNKNOWN]:amount};
@@ -142,21 +133,24 @@ function captureMidi(workflow) {
   });
 }
 function socketHandler(message) {
-  if (!activeGM() || !isTracking() || game.settings.get(MOD, "captureMode") !== "midi") return;
-  if (message?.type !== "midi" || !Array.isArray(message.rows) || message.rows.length > 100) return;
+  if (!activeGM() || !isTracking()) return;
+  const mode=game.settings.get(MOD,"captureMode");
+  if (message?.type==="midi" && mode!=="midi") return;
+  if (message?.type==="applied" && !["rolls","applied"].includes(mode)) return;
+  if (!["midi","applied"].includes(message?.type) || !Array.isArray(message.rows) || message.rows.length > 100) return;
   const user = game.users.get(message.userId);
   const actor = game.actors.get(message.actorId);
   if (!user?.active || !actor || !validActor(actor) || !actor.testUserPermission(user,"OWNER")) return;
   const rows = message.rows.filter(r =>
     r.actorId === actor.id && typeof r.sourceKey === "string" &&
-    /^midi:[^:]+:.+$/.test(r.sourceKey) && r.sourceKey.length < 250 &&
+    r.sourceKey.startsWith(message.type+":") && r.sourceKey.length < 300 &&
     number(r.damage) > 0 && number(r.damage) < 1000000 &&
     r.types && typeof r.types === "object"
   ).map(r => {
     const types = filteredTypes(r.types);
     const damage = totalOf(types);
     return {
-      id:r.sourceKey,sourceKey:r.sourceKey,source:"midi",
+      id:r.sourceKey,sourceKey:r.sourceKey,source:message.type,
       actorId:actor.id,actorName:actor.name,damage,types,
       note:String(r.note ?? "Applied damage").slice(0,120),
       formula:String(r.formula ?? "").slice(0,300),critical:Boolean(r.critical),
@@ -201,7 +195,7 @@ class Dashboard extends Application {
       metricName:this.metric === "hit" ? "Highest Single Hit" :
         this.metric === "total" ? "Total Damage" : "Best Round",
       hit:this.metric === "hit",total:this.metric === "total",round:this.metric === "round",
-      captureMode:game.settings.get(MOD,"captureMode") === "midi" ? "Midi-QOL applied" : "Damage rolls",
+      captureMode:game.settings.get(MOD,"captureMode") === "midi" ? "Midi-QOL applied" : "Confirmed applied damage",
       enabledCount:activeTypes().length
     };
   }
@@ -338,9 +332,11 @@ Hooks.once("init",()=>{
   });
   game.settings.register(MOD,"captureMode",{
     name:"Capture Mode",
-    hint:"Roll mode records actual rolled totals, including critical dice; a damage roll is not proof of a hit. Midi-QOL applied mode (optional) records damage applied to each target. Never run both at once.",
-    scope:"world",config:true,type:String,default:"rolls",
-    choices:{rolls:"D&D5e evaluated damage rolls",midi:"Midi-QOL applied damage"},
+    hint:"Only tracks HP/temp HP loss AFTER using Apply Damage in D&D5e chat (or confirmed Midi-QOL HP change). Dice rolls alone do not count.",
+    scope:"world",config:true,type:String,default:"applied",
+    choices:{applied:"D&D5e Apply Damage (HP loss)",
+      rolls:"D&D5e Apply Damage (old setting)",
+      midi:"Midi-QOL confirmed HP loss"},
     onChange:refresh
   });
   game.settings.register(MOD,"includeNPC",{
@@ -350,10 +346,17 @@ Hooks.once("init",()=>{
 Hooks.once("ready",()=>{
   if(game.system.id!=="dnd5e")ui.notifications.warn("Damage Hall of Fame: D&D5e is required.");
   game.socket.on(SOCKET,socketHandler);
-  Hooks.on("createChatMessage",captureChat);
-  Hooks.on("updateChatMessage",(message,change)=>{
-    if(Object.prototype.hasOwnProperty.call(change,"rolls") ||
-       Object.prototype.hasOwnProperty.call(change,"roll"))captureChat(message);
+  // A dice roll by itself NEVER creates records.
+  installAppliedCapture({
+    actorForMessage,validActor,messageDamageType,
+    filterTypes:filteredTypes,totalOf,cleanNote,combatDetails,isTracking,
+    mode:()=>game.settings.get(MOD,"captureMode"),
+    send:rows=>{
+      if(activeGM())enqueue(()=>storeEvents(rows));
+      else if(!game.user.isGM)game.socket.emit(SOCKET,{
+        type:"applied",userId:game.user.id,actorId:rows[0].actorId,rows
+      });
+    }
   });
   Hooks.on("midi-qol.RollComplete",captureMidi);
   if(game.user.isGM && game.settings.get(MOD,"captureMode")==="midi" &&
