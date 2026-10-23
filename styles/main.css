@@ -78,3 +78,18 @@
 .dt-form input,.dt-form select{width:100%;height:30px;}
 .dt-form-two{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
 @media(max-width:720px){.dt-content{grid-template-columns:1fr;}.dt-champion{min-height:270px;}.dt-types-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.dt-head{flex-wrap:wrap;}.dt-head h1{font-size:25px;}}
+
+/* One-click Foundry V11 Scene Controls shortcut — match native control sizing */
+#controls ol.main-controls > li.dt-damage-hall-control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+#controls ol.main-controls > li.dt-damage-hall-control:hover {
+  color: #f3c67d;
+}
+#controls ol.main-controls > li.dt-damage-hall-control:focus-visible {
+  outline: 2px solid #f3c67d;
+  outline-offset: 1px;
+}

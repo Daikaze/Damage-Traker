@@ -374,3 +374,29 @@ Hooks.on("renderChatLog",(_app,html)=>{
   if(header.length)header.append(button);
   else html.find(".directory-header").first().append(button);
 });
+
+// Foundry V11: add one DIRECT-CLICK icon to the main Scene Controls column.
+// Use renderSceneControls rather than a new SceneControl (which would require
+// selecting its tool in a second click and would change the active canvas layer).
+Hooks.on("renderSceneControls", (_app, html) => {
+  const mainControls = html.find("ol.main-controls").first();
+  if (!mainControls.length || mainControls.find(".dt-damage-hall-control").length) return;
+
+  const control = $('<li class="scene-control dt-damage-hall-control" ' +
+    'title="Open Damage Hall of Fame" data-tooltip="Damage Hall of Fame" ' +
+    'aria-label="Open Damage Hall of Fame" role="button" tabindex="0">' +
+    '<i class="fas fa-trophy"></i></li>');
+
+  const open = event => {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    openWindow();
+  };
+
+  // Click directly opens the dashboard without activating a different tool.
+  control.on("click", open);
+  control.on("keydown", event => {
+    if (event.key === "Enter" || event.key === " ") open(event);
+  });
+  mainControls.append(control);
+});

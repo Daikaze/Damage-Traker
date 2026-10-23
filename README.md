@@ -10,7 +10,7 @@ https://raw.githubusercontent.com/Daikaze/Damage-Traker/main/module.json
 
 The packaged ZIP is hosted in the v1.0.0 GitHub Release created by Actions. If the release has not been published, download a manual ZIP from the project and unpack it under Foundry Data/modules/damage-traker/ with module.json at the root.
 
-Open from **Chat sidebar → Hall of Fame**. Double-click the Foundry window title bar to minimize.
+Open with one click from the **trophy icon in the left Scene Controls toolbar** or from **Chat sidebar → Hall of Fame**. The shortcut does not switch canvas tools or require a second click. Double-click the Foundry window title bar to minimize.
 
 ## Leaderboards
 
