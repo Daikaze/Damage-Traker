@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {DAMAGE_TYPES, extractDamage, leaderboard, filteredDamage} from "../scripts/core.mjs";
 import {appliedTypes,hpLoss} from "../scripts/applied.mjs";
+import {portraitKey,bestPortrait} from "../scripts/portraits.mjs";
 const roll=(total,type,critical=false)=>({constructor:{name:"DamageRoll"},total,formula:"2d6+3",options:{type,critical}});
 test("all 13 official D&D types are supported",()=>assert.equal(DAMAGE_TYPES.length,13));
 test("separate typed rolls in one message sum and split",()=>{
@@ -58,4 +59,23 @@ test("retains one exact type; mixed reductions are unknown",()=>{
   assert.deepEqual(appliedTypes({fire:10,cold:5},15,1),{fire:10,cold:5});
   assert.deepEqual(appliedTypes({fire:10,cold:5},7,0.5),{untyped:7});
   assert.deepEqual(appliedTypes({slashing:10},0),{});
+});
+
+test("portraits remain stable per actor and manual hero name",()=>{
+  assert.equal(portraitKey("AbC_12","Rashira"),"id:AbC_12");
+  assert.equal(portraitKey(""," Rashira "),"name:rashira");
+  assert.equal(portraitKey(null,""),"");
+});
+test("GM chosen artwork overrides existing token and actor art",()=>{
+  assert.equal(bestPortrait({
+    override:"avatars/rashira.webp",activeToken:"tokens/rashira.png",
+    prototypeToken:"tokens/prototype.png",actorImage:"portraits/actor.png"
+  }),"avatars/rashira.webp");
+});
+test("artwork automatically falls back to placed token, prototype and actor",()=>{
+  assert.equal(bestPortrait({activeToken:"tokens/active.png",placedToken:"tokens/placed.png",
+    prototypeToken:"tokens/prototype.png",actorImage:"img/actor.png"}),"tokens/active.png");
+  assert.equal(bestPortrait({prototypeToken:"tokens/prototype.png",actorImage:"img/actor.png"}),"tokens/prototype.png");
+  assert.equal(bestPortrait({actorImage:"img/actor.png"}),"img/actor.png");
+  assert.equal(bestPortrait({actorImage:"icons/svg/mystery-man.svg"}),"");
 });

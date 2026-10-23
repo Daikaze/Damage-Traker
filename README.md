@@ -56,3 +56,13 @@ The GitHub Actions workflow tests sources and packages a ZIP with module.json, s
 - If the user had the old "rolls" capture mode selected, it now behaves as applied-only; old records are NOT deleted.
 - Single damage types retain their type even if applied damage is reduced or capped. A mixed-type roll that cannot be split exactly after application is stored under **Other / Unknown**, never guessed.
 - Other damage applications from unrelated third-party module buttons, or manual HP edits lacking source attribution, are not inferred.
+
+## v1.0.3 — Token art in Hall of Fame
+
+- The leaderboard displays the **current scene's token artwork** for a hero when available. If there is no token, it uses the hero's **prototype token art**, followed by the **actor portrait**. If no image is available, the original initial-letter badge remains.
+- The current record holder's portrait is displayed on the highlighted champion card.
+- A **GM-only camera icon on each leaderboard portrait** opens the *Hero Artwork* dialog. **Choose Art** uses Foundry's File Browser to select an image for this hero; **Use Token Art** removes the manual override and returns to the automatic token/actor portrait.
+- Players see the configured artwork without being able to change it. Manual overrides persist as a separate world setting; **no actor/token texture or damage record is edited**.
+- Artwork is keyed by actor ID, or by normalized hero name for manually created entries without an actor.
+
+All previously recorded damage, filters, and capture settings remain unchanged.

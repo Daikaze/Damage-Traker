@@ -115,3 +115,101 @@
   color: inherit;
   opacity: 1;
 }
+
+/* v1.0.3 — Portraits: native-token fallback and GM image-picker. */
+.damage-hall-app .dt-avatar {
+  position: relative;
+  overflow: hidden;
+  padding: 0;
+  margin: 0;
+  min-width: 35px;
+  color: #f4e9dd;
+}
+.damage-hall-app .dt-avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+.damage-hall-app .dt-row button.dt-avatar-picker {
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  margin: 0;
+  width: 35px;
+  min-width: 35px;
+  max-width: 35px;
+  height: 35px;
+  min-height: 35px;
+  flex: 0 0 35px;
+  box-shadow: none;
+  line-height: 1;
+  cursor: pointer;
+}
+.damage-hall-app .dt-avatar-picker:hover {border-color: #f4cf97;}
+.damage-hall-app .dt-avatar-camera {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  font-size: 9px;
+  line-height: 12px;
+  width: 13px;
+  height: 13px;
+  border-radius: 4px 0 0;
+  color: #fff;
+  background: #2e303ad9;
+  opacity: .9;
+  pointer-events: none;
+}
+.damage-hall-app .dt-avatar-picker:hover .dt-avatar-camera,
+.damage-hall-app .dt-avatar-picker:focus-visible .dt-avatar-camera {
+  background: #8e6937;
+  opacity: 1;
+}
+.damage-hall-app .dt-champion-identity {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+}
+.damage-hall-app .dt-champion-identity h2 {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.damage-hall-app .dt-champion-art {
+  display: block;
+  width: 72px;
+  height: 72px;
+  flex: 0 0 72px;
+  border-radius: 12px;
+  object-fit: cover;
+  object-position: center;
+  border: 1px solid #ad864f;
+  box-shadow: 0 3px 10px #0005;
+}
+.damage-hall-app .dt-portrait-dialog {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.damage-hall-app .dt-portrait-preview {
+  width: 144px;
+  height: 144px;
+  border: 1px solid #ad864f;
+  border-radius: 12px;
+  object-fit: cover;
+}
+.damage-hall-app .dt-portrait-empty {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 64px;
+  text-align: center;
+  color: #ada5a3;
+}

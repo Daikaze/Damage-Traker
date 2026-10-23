@@ -1,11 +1,26 @@
 import {DAMAGE_TYPES, ALL_TYPES, TYPE_NAMES, UNKNOWN, number, extractDamage, leaderboard} from "./core.mjs";
 import {installAppliedCapture, readHP, hpLoss} from "./applied.mjs";
+import {portraitKey, bestPortrait} from "./portraits.mjs";
 
 const MOD = "damage-traker";
 const SOCKET = "module." + MOD;
 let queue = Promise.resolve();
 let windowApp;
 const getRecords = () => game.settings.get(MOD, "records") ?? [];
+const getPortraits = () => game.settings.get(MOD, "portraits") ?? {};
+function getActorPortrait(actorId, actorName) {
+  const actor = actorId ? game.actors.get(actorId) : null;
+  const override = getPortraits()[portraitKey(actorId, actorName)];
+  const active = actorId ? canvas.tokens?.placeables?.find(t => t.actor?.id === actorId) : null;
+  const placed = actorId ? canvas.scene?.tokens?.contents?.find(t => t.actorId === actorId) : null;
+  return bestPortrait({
+    override,
+    activeToken:active?.document?.texture?.src ?? active?.texture?.src,
+    placedToken:placed?.texture?.src,
+    prototypeToken:actor?.prototypeToken?.texture?.src,
+    actorImage:actor?.img
+  });
+}
 const isTracking = () => game.settings.get(MOD, "trackingEnabled");
 const activeTypes = () => game.settings.get(MOD, "enabledTypes") ?? ALL_TYPES;
 const safe = value => Handlebars.escapeExpression(String(value ?? ""));
@@ -184,7 +199,9 @@ class Dashboard extends Application {
     const leaders = leaderboard(getRecords(),this.metric,this.damageFilter).map(r => ({
       ...r, amountText:numeric(r.amount),
       initial:r.actorName[0]?.toUpperCase() ?? "?", crowned:r.rank === 1,
-      dataKey:r.actorId || r.actorName
+      dataKey:r.actorId || r.actorName,
+      portraitKey:portraitKey(r.actorId, r.actorName),
+      portrait:getActorPortrait(r.actorId, r.actorName)
     }));
     return {
       leaders,first:leaders[0],count:getRecords().length,
@@ -228,10 +245,56 @@ class Dashboard extends Application {
         await game.settings.set(MOD,"enabledTypes",ALL_TYPES.filter(t => next.has(t)));
       });
     });
+    html.find("[data-portrait-key]").on("click", event => {
+      if (!game.user.isGM) return;
+      this.portraitDialog(event.currentTarget.dataset.portraitKey);
+    });
     html.find("[data-add]").on("click",()=>this.editDialog());
     html.find("[data-manage]").on("click",()=>this.historyDialog());
     html.find("[data-records]").on("click",event=>this.historyDialog(event.currentTarget.dataset.records));
   }
+  portraitDialog(key) {
+    if (!game.user.isGM || !key) return;
+    const current = String(getPortraits()[key] ?? "");
+    const preview = current ?
+      '<img src="' + safe(current) + '" class="dt-portrait-preview" alt="Selected artwork">' :
+      '<div class="dt-portrait-empty"><i class="fas fa-image"></i> Using actor / token artwork</div>';
+    new Dialog({
+      title:"Hero Artwork",
+      content:'<div class="dt-portrait-dialog">' + preview +
+        '<p class="notes">Choose an image from the Foundry File Browser. ' +
+        'This changes only the Hall of Fame artwork; your actual token stays unchanged. ' +
+        'Use Token Art resets to the existing token or actor image.</p></div>',
+      buttons:{
+        choose:{icon:'<i class="fas fa-image"></i>', label:"Choose Art",
+          callback:()=>{
+            new FilePicker({
+              type:"image", current,
+              callback:path=>{
+                if (typeof path !== "string" || !path.trim()) return;
+                enqueue(async()=>{
+                  const portraits=foundry.utils.deepClone(getPortraits());
+                  portraits[key]=path.trim();
+                  await game.settings.set(MOD,"portraits",portraits);
+                });
+              }
+            }).render(true);
+          }
+        },
+        reset:{icon:'<i class="fas fa-undo"></i>',label:"Use Token Art",
+          callback:()=>{
+            enqueue(async()=>{
+              const portraits=foundry.utils.deepClone(getPortraits());
+              delete portraits[key];
+              await game.settings.set(MOD,"portraits",portraits);
+            });
+          }
+        },
+        cancel:{label:"Cancel"}
+      },default:"choose"
+    },{width:440}).render(true);
+  }
+
   editDialog(existing = null) {
     if (!game.user.isGM) return;
     const options=game.actors.filter(validActor).sort((a,b)=>a.name.localeCompare(b.name))
@@ -323,6 +386,10 @@ Hooks.once("init",()=>{
   game.settings.register(MOD,"records",{
     scope:"world",config:false,type:Array,default:[],onChange:refresh
   });
+  game.settings.register(MOD,"portraits",{
+    name:"Hall of Fame Artwork",
+    scope:"world",config:false,type:Object,default:{},onChange:refresh
+  });
   game.settings.register(MOD,"trackingEnabled",{
     name:"Automatic tracking",hint:"Can also be toggled inside the Hall of Fame window.",
     scope:"world",config:true,type:Boolean,default:true,onChange:refresh
@@ -366,7 +433,8 @@ Hooks.once("ready",()=>{
   game.modules.get(MOD).api={
     open:openWindow,
     records:()=>foundry.utils.deepClone(getRecords()),
-    leaderboard:(metric,type)=>leaderboard(getRecords(),metric,type)
+    leaderboard:(metric,type)=>leaderboard(getRecords(),metric,type),
+    getPortraits:()=>foundry.utils.deepClone(getPortraits())
   };
 });
 Hooks.on("renderChatLog",(_app,html)=>{

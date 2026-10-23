@@ -47,7 +47,12 @@
       <div class="dt-label">✦ {{metricName}}</div>
       {{#if first}}
         <div class="dt-holder">♛ Current Record Holder</div>
-        <h2>{{first.actorName}}</h2>
+        <div class="dt-champion-identity">
+          <h2>{{first.actorName}}</h2>
+          {{#if first.portrait}}
+            <img class="dt-champion-art" src="{{first.portrait}}" alt="{{first.actorName}} token art" loading="lazy">
+          {{/if}}
+        </div>
         <div class="dt-top-score">{{first.amountText}} <span>DMG</span></div>
         <p class="dt-sub">{{first.detail}}</p>
         <div class="dt-win">★ #1 IN CAMPAIGN</div>
@@ -62,7 +67,24 @@
         {{#each leaders}}
           <div class="dt-row">
             <div class="dt-rank">{{#if crowned}}♛{{else}}{{rank}}{{/if}}</div>
-            <div class="dt-avatar">{{initial}}</div>
+            {{#if ../isGM}}
+              <button type="button" class="dt-avatar dt-avatar-picker" data-portrait-key="{{portraitKey}}" title="Change {{actorName}} artwork" aria-label="Change artwork for {{actorName}}">
+                {{#if portrait}}
+                  <img src="{{portrait}}" alt="{{actorName}} token art" loading="lazy">
+                {{else}}
+                  <span>{{initial}}</span>
+                {{/if}}
+                <i class="fas fa-camera dt-avatar-camera" aria-hidden="true"></i>
+              </button>
+            {{else}}
+              <div class="dt-avatar">
+                {{#if portrait}}
+                  <img src="{{portrait}}" alt="{{actorName}} token art" loading="lazy">
+                {{else}}
+                  <span>{{initial}}</span>
+                {{/if}}
+              </div>
+            {{/if}}
             <div class="dt-character"><b>{{actorName}}</b><small>{{detail}}</small></div>
             <div class="dt-amount"><b>{{amountText}}</b><small>DMG</small></div>
             {{#if ../isGM}}
