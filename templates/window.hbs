@@ -1,0 +1,84 @@
+<section class="dt-ui">
+  <header class="dt-head">
+    <div>
+      <h1>Damage Hall of Fame</h1>
+      <p>Track the heroes who hit the hardest</p>
+    </div>
+    <div class="dt-live">
+      <label class="dt-switch" title="Turn automatic damage tracking on or off">
+        <input type="checkbox" data-tracking {{#if tracking}}checked{{/if}} {{#unless isGM}}disabled{{/unless}}>
+        <span class="dt-switch-track"></span>
+      </label>
+      <strong class="{{#if tracking}}is-on{{else}}is-off{{/if}}">TRACKING {{#if tracking}}ON{{else}}OFF{{/if}}</strong>
+    </div>
+  </header>
+  <nav class="dt-tabs">
+    <div class="dt-metrics">
+      <button type="button" data-metric="hit" class="{{#if hit}}active{{/if}}">⚔ Highest Hit</button>
+      <button type="button" data-metric="total" class="{{#if total}}active{{/if}}">🔥 Total Damage</button>
+      <button type="button" data-metric="round" class="{{#if round}}active{{/if}}">✦ Best Round</button>
+    </div>
+    <div class="dt-filters">
+      <select data-filter title="Show only this damage type">
+        <option value="all" {{#if allSelected}}selected{{/if}}>All damage types</option>
+        {{#each types}}
+          <option value="{{key}}" {{#if selected}}selected{{/if}}>{{name}}</option>
+        {{/each}}
+      </select>
+      <button type="button" data-toggle-types title="Configure tracked damage types" class="dt-settings-btn {{#if showTypes}}active{{/if}}"><i class="fas fa-sliders-h"></i></button>
+    </div>
+  </nav>
+  {{#if showTypes}}
+    <section class="dt-type-panel">
+      <div class="dt-panel-title">
+        <b>Damage Types</b>
+        <small>{{enabledCount}} / 14 enabled · {{#if isGM}}Uncheck a type to stop recording new damage of that type{{else}}GM manages these settings{{/if}}</small>
+      </div>
+      <div class="dt-types-grid">
+        {{#each types}}
+          <label class="dt-type-item"><input type="checkbox" data-enabled-type="{{key}}" {{#if checked}}checked{{/if}} {{#unless ../isGM}}disabled{{/unless}}> {{name}}</label>
+        {{/each}}
+      </div>
+      <p class="dt-panel-note">13 official 5e damage types + Other / Unknown for rolls whose type cannot be determined reliably. Changes do not erase existing history.</p>
+    </section>
+  {{/if}}
+  <main class="dt-content">
+    <section class="dt-champion">
+      <div class="dt-label">✦ {{metricName}}</div>
+      {{#if first}}
+        <div class="dt-holder">♛ Current Record Holder</div>
+        <h2>{{first.actorName}}</h2>
+        <div class="dt-top-score">{{first.amountText}} <span>DMG</span></div>
+        <p class="dt-sub">{{first.detail}}</p>
+        <div class="dt-win">★ #1 IN CAMPAIGN</div>
+      {{else}}
+        <h2>No records yet</h2>
+        <p class="dt-sub">Eligible damage rolls will appear here when tracking is enabled.</p>
+      {{/if}}
+    </section>
+    <section class="dt-leaderboard">
+      <header><b>🏆 Leaderboard</b><span>{{leaders.length}} heroes</span></header>
+      <div class="dt-rows">
+        {{#each leaders}}
+          <div class="dt-row">
+            <div class="dt-rank">{{#if crowned}}♛{{else}}{{rank}}{{/if}}</div>
+            <div class="dt-avatar">{{initial}}</div>
+            <div class="dt-character"><b>{{actorName}}</b><small>{{detail}}</small></div>
+            <div class="dt-amount"><b>{{amountText}}</b><small>DMG</small></div>
+            {{#if ../isGM}}
+              <button type="button" class="dt-pencil" data-records="{{dataKey}}" title="View and edit records"><i class="fas fa-pencil-alt"></i></button>
+            {{/if}}
+          </div>
+        {{else}}
+          <div class="dt-empty">No recorded damage for the selected category.</div>
+        {{/each}}
+      </div>
+    </section>
+  </main>
+  <footer class="dt-foot">
+    <div class="dt-foot-copy"><b>⚙ Record Manager</b><small>{{count}} records · {{captureMode}}</small></div>
+    {{#if isGM}}
+      <div class="dt-actions"><button type="button" data-manage>Manage Records</button><button type="button" data-add class="dt-add">+ Add Record</button></div>
+    {{else}}<span class="dt-view-only">View only</span>{{/if}}
+  </footer>
+</section>

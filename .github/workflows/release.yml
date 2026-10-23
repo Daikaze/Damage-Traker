@@ -1,0 +1,33 @@
+name: Test and release Foundry V11 module
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax checks and unit tests
+        run: |
+          node --check scripts/core.mjs
+          node --check scripts/main.mjs
+          node --test tests/core.test.mjs
+          python3 -m json.tool module.json > /dev/null
+      - name: Pack Foundry module
+        run: |
+          zip -r damage-traker.zip module.json scripts templates styles -x '*/.*'
+          unzip -l damage-traker.zip
+      - name: Publish ZIP
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=$(node -p "require('./module.json').version")
+          TAG="v$VERSION"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" damage-traker.zip --clobber
+          else
+            gh release create "$TAG" damage-traker.zip --title "Damage Hall of Fame $TAG (Foundry V11)" --notes "Damage leaderboard with GM tracking switch and all 13 damage types" --target "$GITHUB_SHA"
+          fi
