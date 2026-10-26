@@ -66,3 +66,22 @@ The GitHub Actions workflow tests sources and packages a ZIP with module.json, s
 - Artwork is keyed by actor ID, or by normalized hero name for manually created entries without an actor.
 
 All previously recorded damage, filters, and capture settings remain unchanged.
+
+## v1.0.4 — Confirmed damage & initiative-aware Highest Hit
+
+- **Applied Damage:** tracks HP and temporary-HP loss after the chat's Apply Damage
+  action, and uses D&D5e's post-application hook for damage applied by the system.
+  A roll alone never becomes a record. Duplicate observations of the same HP
+  change are ignored.
+- **Attacker attribution:** chat-card buttons and chat context actions identify
+  the rolling PC. If no source was supplied for a system damage application,
+  the current initiative combatant can be used if they are a tracked PC.
+  Outside combat, unattributed system damage is intentionally not guessed.
+- **Highest Hit:** during initiative, combines that PC's applied hits for
+  each combat round (same combat ID + round). Outside initiative it continues
+  to score single applied hits. The highest of these scores wins.
+- **Best Round**, **Total Damage**, filters, artwork, stored records and existing
+  manual edits remain intact. Existing entries with combat/round metadata
+  are automatically regrouped in the leaderboard; no migrations.
+- Requires a live Foundry V11/D&D5e test for specific third-party damage
+  automation pathways; not all third-party buttons expose source metadata.

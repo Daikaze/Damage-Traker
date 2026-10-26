@@ -209,7 +209,7 @@ class Dashboard extends Application {
       hasRecords:leaders.length > 0,showTypes:this.showTypes,
       types,allSelected:this.damageFilter === "all",
       filterLabel:this.damageFilter === "all" ? "All damage types" : TYPE_NAMES[this.damageFilter],
-      metricName:this.metric === "hit" ? "Highest Single Hit" :
+      metricName:this.metric === "hit" ? "Highest Hit / Combat Round" :
         this.metric === "total" ? "Total Damage" : "Best Round",
       hit:this.metric === "hit",total:this.metric === "total",round:this.metric === "round",
       captureMode:game.settings.get(MOD,"captureMode") === "midi" ? "Midi-QOL applied" : "Confirmed applied damage",

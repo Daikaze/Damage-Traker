@@ -115,7 +115,8 @@ export function leaderboard(records, metric = "hit", type = "all") {
     let group = groups.get(key);
     if (!group) {
       group = {actorId: record.actorId || "", actorName: name,
-        total: 0, bestHit: 0, bestRecord: null, rounds: new Map(), count: 0};
+        total: 0, bestHit: 0, bestRecord: null, bestOutside: 0, outsideRecord: null,
+        rounds: new Map(), count: 0};
       groups.set(key, group);
     }
     group.actorName = name;
@@ -128,20 +129,30 @@ export function leaderboard(records, metric = "hit", type = "all") {
     const round = Number(record.round);
     if (record.combatId && Number.isInteger(round) && round >= 1) {
       const id = String(record.combatId) + ":" + round;
-      const previous = group.rounds.get(id) ?? {amount: 0, round};
+      const previous = group.rounds.get(id) ?? {amount: 0, round, count: 0};
       previous.amount = rounded(previous.amount + damage);
+      previous.count++;
       group.rounds.set(id, previous);
+    } else if (damage > group.bestOutside) {
+      group.bestOutside = damage;
+      group.outsideRecord = record;
     }
   }
   const rows = [];
   for (const group of groups.values()) {
     const bestRound = [...group.rounds.values()].sort((a, b) => b.amount - a.amount)[0];
+    // Highest Hit sums each PC's applied hits inside one combat round;
+    // outside combat it retains the strongest individual applied hit.
+    const combatWins = (bestRound?.amount ?? 0) > group.bestOutside;
+    const highest = combatWins ? bestRound.amount : group.bestOutside;
     const amount = metric === "total" ? group.total :
-      metric === "round" ? (bestRound?.amount ?? 0) : group.bestHit;
+      metric === "round" ? (bestRound?.amount ?? 0) : highest;
     if (!amount) continue;
-    const detail = metric === "total" ? group.count + " damage events" :
+    const detail = metric === "total" ? group.count + " applied damage events" :
       metric === "round" ? "Round " + bestRound.round :
-      (group.bestRecord?.note || "Damage roll");
+      combatWins ? "Combat round " + bestRound.round +
+        " • " + bestRound.count + " applied " + (bestRound.count === 1 ? "hit" : "hits") :
+      (group.outsideRecord?.note || "Applied hit");
     rows.push({...group, amount, detail});
   }
   return rows.sort((a, b) => b.amount - a.amount ||

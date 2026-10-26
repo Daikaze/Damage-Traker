@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {DAMAGE_TYPES, extractDamage, leaderboard, filteredDamage} from "../scripts/core.mjs";
-import {appliedTypes,hpLoss} from "../scripts/applied.mjs";
+import {appliedTypes,hpLoss,stateSignature} from "../scripts/applied.mjs";
 import {portraitKey,bestPortrait} from "../scripts/portraits.mjs";
 const roll=(total,type,critical=false)=>({constructor:{name:"DamageRoll"},total,formula:"2d6+3",options:{type,critical}});
 test("all 13 official D&D types are supported",()=>assert.equal(DAMAGE_TYPES.length,13));
@@ -41,7 +41,7 @@ test("highest hit, total and best round are independent",()=>{
     {actorId:"B",actorName:"Sunless",damage:30,types:{fire:30},combatId:"c2",round:1},
     {actorId:"A",actorName:"Rashira",damage:8,types:{fire:8},combatId:"",round:null}
   ];
-  assert.deepEqual(leaderboard(rows,"hit").map(r=>[r.actorName,r.amount]),[["Sunless",80],["Rashira",75]]);
+  assert.deepEqual(leaderboard(rows,"hit").map(r=>[r.actorName,r.amount]),[["Sunless",110],["Rashira",75]]);
   assert.deepEqual(leaderboard(rows,"total").map(r=>[r.actorName,r.amount]),[["Rashira",153],["Sunless",110]]);
   assert.deepEqual(leaderboard(rows,"round").map(r=>[r.actorName,r.amount]),[["Sunless",110],["Rashira",75]]);
   assert.deepEqual(leaderboard(rows,"total","slashing").map(r=>[r.actorName,r.amount]),[["Rashira",30]]);
@@ -78,4 +78,31 @@ test("artwork automatically falls back to placed token, prototype and actor",()=
   assert.equal(bestPortrait({prototypeToken:"tokens/prototype.png",actorImage:"img/actor.png"}),"tokens/prototype.png");
   assert.equal(bestPortrait({actorImage:"img/actor.png"}),"img/actor.png");
   assert.equal(bestPortrait({actorImage:"icons/svg/mystery-man.svg"}),"");
+});
+
+test("Highest Hit compares an entire combat round against individual out-of-combat hits",()=>{
+  const events=[
+    {actorId:"A",actorName:"A",damage:12,types:{fire:12},combatId:"c1",round:1},
+    {actorId:"A",actorName:"A",damage:18,types:{fire:18},combatId:"c1",round:1},
+    {actorId:"A",actorName:"A",damage:45,types:{fire:45},combatId:"",round:null},
+    {actorId:"A",actorName:"A",damage:8,types:{fire:8},combatId:"c1",round:2},
+    {actorId:"B",actorName:"B",damage:10,types:{cold:10},combatId:"c1",round:1},
+    {actorId:"B",actorName:"B",damage:12,types:{cold:12},combatId:"c1",round:1},
+    {actorId:"B",actorName:"B",damage:17,types:{cold:17},combatId:"",round:null}
+  ];
+  assert.deepEqual(leaderboard(events,"hit").map(r=>[r.actorName,r.amount]),[["A",45],["B",22]]);
+  assert.equal(leaderboard(events,"hit")[1].detail,"Combat round 1 • 2 applied hits");
+  assert.equal(leaderboard(events,"round")[0].amount,30);
+  assert.equal(leaderboard(events,"total")[0].amount,83);
+  assert.equal(stateSignature({uuid:"Actor.a"},{hp:10,temp:5}),"Actor.a:10:5");
+});
+test("Combat rounds never mix across combats or heroes",()=>{
+  const events=[
+    {actorId:"A",actorName:"A",damage:30,types:{fire:30},combatId:"c1",round:2},
+    {actorId:"A",actorName:"A",damage:31,types:{fire:31},combatId:"c1",round:2},
+    {actorId:"A",actorName:"A",damage:35,types:{fire:35},combatId:"c2",round:2},
+    {actorId:"B",actorName:"B",damage:50,types:{fire:50},combatId:"c1",round:2}
+  ];
+  assert.deepEqual(leaderboard(events,"hit").map(r=>r.amount),[61,50]);
+  assert.equal(leaderboard(events,"hit")[0].detail,"Combat round 2 • 2 applied hits");
 });
