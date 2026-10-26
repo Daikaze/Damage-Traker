@@ -331,7 +331,7 @@ class Dashboard extends Application {
         }},
         cancel:{label:"Cancel"}
       },default:"save"
-    },{width:460}).render(true);
+    },{width:460,classes:["dt-dark-dialog"]}).render(true);
   }
   async removePlayer(key) {
     if(!game.user.isGM||!key)return;
@@ -436,7 +436,7 @@ class Dashboard extends Application {
           this.playerHistory(key);
         });
       }
-    },{width:720});
+    },{width:720,classes:["dt-dark-dialog"]});
     dialog.render(true);
   }
 
@@ -479,7 +479,7 @@ class Dashboard extends Application {
         },
         cancel:{label:"Cancel"}
       },default:"choose"
-    },{width:440}).render(true);
+    },{width:440,classes:["dt-dark-dialog"]}).render(true);
   }
 
   editDialog(existing = null, heroOverride = null) {
@@ -538,7 +538,7 @@ class Dashboard extends Application {
         }},
         cancel:{label:"Cancel"}
       },default:"save"
-    },{width:500}).render(true);
+    },{width:500,classes:["dt-dark-dialog"]}).render(true);
   }
   historyDialog(actorId="") {
     if (!game.user.isGM) return;
@@ -568,7 +568,7 @@ class Dashboard extends Application {
           dialog.close();this.historyDialog(actorId);
         });
       }
-    },{width:630});
+    },{width:630,classes:["dt-dark-dialog"]});
     dialog.render(true);
   }
 }
@@ -617,6 +617,7 @@ Hooks.once("ready",()=>{
   // A dice roll by itself NEVER creates records.
   installAppliedCapture({
     actorForMessage,validActor,messageDamageType,
+    isPrimaryGM:activeGM,
     filterTypes:filteredTypes,totalOf,cleanNote,combatDetails,isTracking,
     mode:()=>game.settings.get(MOD,"captureMode"),
     send:rows=>{

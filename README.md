@@ -114,3 +114,29 @@ All previously recorded damage, filters, and capture settings remain unchanged.
 - Compatibility target remains **Foundry VTT v11 / D&D5e**. The new pure
   roster/session utilities have dedicated automated tests; live V11 testing
   of the interface remains recommended.
+
+
+## v1.0.6 — Fix Applied Damage and black history theme
+
+- Damage history dialogs now have their own dark/black background and high
+  contrast text, controls, headings, session summaries and buttons. The
+  dashboard's palette is retained.
+- **Fix**: capture HP/temporary-HP losses that originate from other clients.
+  The primary online GM listens to all Actor HP updates, not only its own
+  actions, while player-initiated events can also be forwarded over the
+  existing module socket.
+- **Fix**: D&D5e preApplyDamage and applyDamage hooks preserve verified
+  damage attribution; damageActor and Actor document updates offer
+  deduplicated fallbacks. Damage-roll chat provenance is matched only
+  when a recent relevant damage message is available.
+- When damage was confirmed by D&D5e and chat attribution is absent during
+  initiative, the currently active PC may be credited. Out of combat
+  with no attributable source, damage is not assigned to an arbitrary PC.
+- **Never** count a bare chat damage roll. Damage is recorded only after
+  HP or temporary HP loss or a confirmed D&D5e applied-damage event.
+- Automatic and socket duplicates are deduplicated using target final HP
+  state, source, combat round and message identity.
+- Existing world records, registered PCs, portraits, damage types and
+  manually assigned sessions are preserved without migration.
+- Live end-to-end validation is still required on the user's actual
+  Foundry V11/D&D5e world, including third-party damage automation.

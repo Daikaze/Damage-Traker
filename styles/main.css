@@ -334,3 +334,124 @@
   .damage-hall-app .dt-tabs{justify-content:center;}
   .damage-hall-app .dt-filters{justify-content:center;}
 }
+
+/* v1.0.6: Foundry Dialog has its own .window-content (not the dashboard's).
+   Force a unified BLACK theme for History, Add PC, Record and Artwork dialogs. */
+.app.window-app.dt-dark-dialog,
+.window-app.dt-dark-dialog,
+.dt-dark-dialog {
+  --dt-dialog-black:#101014;
+  --dt-dialog-surface:#1b1b24;
+  --dt-dialog-edge:#49424c;
+  --dt-dialog-ink:#f4eee7;
+  --dt-dialog-muted:#c7c0cb;
+  color:var(--dt-dialog-ink) !important;
+}
+.window-app.dt-dark-dialog .window-content,
+.dt-dark-dialog .window-content {
+  background:var(--dt-dialog-black) !important;
+  color:var(--dt-dialog-ink) !important;
+  padding:14px !important;
+  border:1px solid #34313c;
+  overflow-y:auto;
+}
+.dt-dark-dialog .dialog-content,
+.dt-dark-dialog .dialog-buttons {
+  background:var(--dt-dialog-black) !important;
+  color:var(--dt-dialog-ink) !important;
+}
+.dt-dark-dialog .dialog-content {
+  padding:2px 4px 12px !important;
+}
+.dt-dark-dialog .dialog-content p,
+.dt-dark-dialog .dialog-content small,
+.dt-dark-dialog .dialog-content .notes,
+.dt-dark-dialog .dialog-content label,
+.dt-dark-dialog .dialog-content span {
+  color:var(--dt-dialog-muted);
+}
+.dt-dark-dialog .dialog-content strong,
+.dt-dark-dialog .dialog-content b,
+.dt-dark-dialog .dialog-content h3,
+.dt-dark-dialog .dialog-content h4 {
+  color:var(--dt-dialog-ink);
+}
+.dt-dark-dialog .dialog-buttons {
+  display:flex;
+  gap:8px;
+  margin:4px 0 0;
+  padding:12px 0 2px !important;
+  border-top:1px solid var(--dt-dialog-edge);
+}
+.dt-dark-dialog .dialog-buttons > button,
+.dt-dark-dialog .window-content button {
+  background:#302a31 !important;
+  border:1px solid #766350 !important;
+  border-radius:7px;
+  color:#f6dfba !important;
+  text-shadow:none !important;
+  box-shadow:none !important;
+  min-height:32px;
+}
+.dt-dark-dialog .dialog-buttons > button:hover,
+.dt-dark-dialog .window-content button:hover {
+  background:#483729 !important;
+  color:#ffe5b4 !important;
+  border-color:#e1b675 !important;
+}
+.dt-dark-dialog .dialog-content input,
+.dt-dark-dialog .dialog-content select,
+.dt-dark-dialog .dialog-content textarea {
+  color:#f6eee6 !important;
+  background:#24232d !important;
+  border:1px solid #6e626b !important;
+  border-radius:6px;
+  box-shadow:none !important;
+}
+.dt-dark-dialog .dialog-content select option{
+  background:#25232b !important;
+  color:#fff0e0 !important;
+}
+.dt-dark-dialog .dialog-content input::placeholder,
+.dt-dark-dialog .dialog-content textarea::placeholder {
+  color:#afa3b4 !important;
+}
+.dt-dark-dialog .dt-session-summary {
+  background:#191921 !important;
+  border:1px solid #514655;
+}
+.dt-dark-dialog .dt-session-summary p,
+.dt-dark-dialog .dt-history p {
+  color:#d4cbd8 !important;
+  background:#1f1f28 !important;
+}
+.dt-dark-dialog .dt-pc-history h3 {
+  color:#f5c783 !important;
+  border-bottom:1px solid #78604a;
+  padding-bottom:6px;
+}
+.dt-dark-dialog .dt-pc-history-head {
+  background:#24232f;
+}
+.dt-dark-dialog .dt-pc-history-head b{
+  color:#f5d397 !important;
+}
+.dt-dark-dialog .dt-pc-history-head span{
+  color:#e5caa3 !important;
+}
+.dt-dark-dialog .dt-session-row,
+.dt-dark-dialog .dt-history-entry {
+  border-color:#49434f;
+}
+.dt-dark-dialog .dt-session-title strong,
+.dt-dark-dialog .dt-pc-dmg {
+  color:#f4c484 !important;
+}
+.dt-dark-dialog .dt-history-entry > span > small,
+.dt-dark-dialog .dt-session-row small {
+  color:#d0c5d0 !important;
+}
+.dt-dark-dialog .dt-history {
+  background:#17171f;
+  border-radius:7px;
+}
