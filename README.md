@@ -85,3 +85,32 @@ All previously recorded damage, filters, and capture settings remain unchanged.
   are automatically regrouped in the leaderboard; no migrations.
 - Requires a live Foundry V11/D&D5e test for specific third-party damage
   automation pathways; not all third-party buttons expose source metadata.
+
+## v1.0.5 — Saved PCs, Player Selection, per-session history
+
+- **Fix: Add PC** now saves an independent PC roster in the module's **world
+  settings**. Adding an existing PC Actor or entering a custom character name
+  works even with **zero damage**. Previously Add Record required a positive
+  damage number and did not register an empty PC.
+- A **Players** tab is next to Damage Types, with a **Player Selection** dropdown,
+  a GM-only **Add PC** button and a scrollable roster. Selecting one PC filters
+  the leaderboard, without hiding the player's saved identity when they have
+  no recorded hits.
+- **Click any PC's name, roster card or selected PC's History button** to open
+  their damage history. It shows applied damage, type, attack note, combat
+  round, date, and a **Damage by Session** summary. Players can view it; only
+  the GM can modify or delete it.
+- **Session assignment is intentionally GM-controlled**. In the Players panel,
+  enter and save **Current Session** to label new applied events. In any PC's
+  history, the GM can set or correct the session for each saved event.
+  The existing Add/Edit Record form also supports a Session field. Unlabeled
+  old records display under "Unassigned session"; no data are erased.
+- New **+ Add Damage** in PC History prefills the character in the manual
+  damage form, useful for entering previous sessions.
+- Removing a PC from the *registered roster* does not erase their damage
+  records, which remain discoverable via Player Selection and history.
+- Highest Hit in initiative, regular hits outside combat, damage filters,
+  GM-only edit controls, artwork, and existing records/settings are preserved.
+- Compatibility target remains **Foundry VTT v11 / D&D5e**. The new pure
+  roster/session utilities have dedicated automated tests; live V11 testing
+  of the interface remains recommended.

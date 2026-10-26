@@ -1,6 +1,7 @@
 import {DAMAGE_TYPES, ALL_TYPES, TYPE_NAMES, UNKNOWN, number, extractDamage, leaderboard} from "./core.mjs";
 import {installAppliedCapture, readHP, hpLoss} from "./applied.mjs";
 import {portraitKey, bestPortrait} from "./portraits.mjs";
+import {heroKey,addHero,heroRoster,recordsForHero,sessionHistory} from "./roster.mjs";
 
 const MOD = "damage-traker";
 const SOCKET = "module." + MOD;
@@ -8,6 +9,8 @@ let queue = Promise.resolve();
 let windowApp;
 const getRecords = () => game.settings.get(MOD, "records") ?? [];
 const getPortraits = () => game.settings.get(MOD, "portraits") ?? {};
+const getRoster = () => game.settings.get(MOD, "players") ?? [];
+const getCurrentSession = () => String(game.settings.get(MOD, "currentSession") ?? "").trim().slice(0,80);
 function getActorPortrait(actorId, actorName) {
   const actor = actorId ? game.actors.get(actorId) : null;
   const override = getPortraits()[portraitKey(actorId, actorName)];
@@ -49,7 +52,7 @@ async function storeEvents(entries) {
     if (existing >= 0) {
       if (all[existing].manualOverride || JSON.stringify(all[existing].types) === JSON.stringify(row.types)) continue;
       all[existing] = {...row, id: all[existing].id};
-    } else all.push(row);
+    } else all.push({...row,session:String(row.session||getCurrentSession()).slice(0,80)});
     dirty = true;
   }
   if (dirty) await updateRecords(all);
@@ -169,6 +172,7 @@ function socketHandler(message) {
       actorId:actor.id,actorName:actor.name,damage,types,
       note:String(r.note ?? "Applied damage").slice(0,120),
       formula:String(r.formula ?? "").slice(0,300),critical:Boolean(r.critical),
+      session:"",
       date:Date.now(),combatId:String(r.combatId ?? "").slice(0,80),
       round:Number.isInteger(r.round) && r.round >= 1 ? r.round : null,
       manualOverride:false
@@ -182,6 +186,8 @@ class Dashboard extends Application {
     this.metric = "hit";
     this.damageFilter = "all";
     this.showTypes = false;
+    this.showPlayers = false;
+    this.playerFilter = "";
   }
   static get defaultOptions() {
     return foundry.utils.mergeObject(super.defaultOptions,{
@@ -196,17 +202,30 @@ class Dashboard extends Application {
       key, name:TYPE_NAMES[key], checked:activeTypes().includes(key),
       selected:this.damageFilter === key
     }));
-    const leaders = leaderboard(getRecords(),this.metric,this.damageFilter).map(r => ({
-      ...r, amountText:numeric(r.amount),
-      initial:r.actorName[0]?.toUpperCase() ?? "?", crowned:r.rank === 1,
-      dataKey:r.actorId || r.actorName,
-      portraitKey:portraitKey(r.actorId, r.actorName),
-      portrait:getActorPortrait(r.actorId, r.actorName)
+    const players=heroRoster(getRoster(),getRecords());
+    const selectedHero=players.find(h=>h.key===this.playerFilter)??null;
+    const visibleRecords=recordsForHero(getRecords(),selectedHero);
+    const leaders=leaderboard(visibleRecords,this.metric,this.damageFilter).map(r=>({
+      ...r,amountText:numeric(r.amount),
+      initial:r.actorName[0]?.toUpperCase()??"?",crowned:r.rank===1,
+      dataKey:r.actorId||r.actorName,
+      heroKey:heroKey(r.actorId,r.actorName),
+      portraitKey:portraitKey(r.actorId,r.actorName),
+      portrait:getActorPortrait(r.actorId,r.actorName)
     }));
+    const playerOptions=players.map(h=>({
+      ...h, selected:h.key===this.playerFilter,
+      registered:getRoster().some(p=>heroKey(p.actorId,p.actorName)===h.key),
+      portrait:getActorPortrait(h.actorId,h.actorName)
+    }));
+
     return {
       leaders,first:leaders[0],count:getRecords().length,
       isGM:game.user.isGM,tracking:isTracking(),
-      hasRecords:leaders.length > 0,showTypes:this.showTypes,
+      hasRecords:leaders.length>0,showTypes:this.showTypes,
+      showPlayers:this.showPlayers,players:playerOptions,
+      playerCount:playerOptions.length,selectedHero,
+      currentSession:getCurrentSession(),
       types,allSelected:this.damageFilter === "all",
       filterLabel:this.damageFilter === "all" ? "All damage types" : TYPE_NAMES[this.damageFilter],
       metricName:this.metric === "hit" ? "Highest Hit / Combat Round" :
@@ -225,6 +244,29 @@ class Dashboard extends Application {
     html.find("[data-filter]").on("change", event => {
       this.damageFilter = event.currentTarget.value;
       this.render(false);
+    });
+    html.find("[data-player-filter]").on("change",event=>{
+      this.playerFilter=event.currentTarget.value;
+      this.render(false);
+    });
+    html.find("[data-toggle-players]").on("click",()=>{
+      this.showPlayers=!this.showPlayers;
+      this.render(false);
+    });
+    html.find("[data-add-player]").on("click",()=>this.addPlayerDialog());
+    html.find("[data-open-pc]").on("click",event=>
+      this.playerHistory(event.currentTarget.dataset.openPc));
+    html.find("[data-view-pc]").on("click",()=>{
+      if(this.playerFilter)this.playerHistory(this.playerFilter);
+    });
+    html.find("[data-remove-pc]").on("click",event=>
+      this.removePlayer(event.currentTarget.dataset.removePc));
+    html.find("[data-save-current-session]").on("click",event=>{
+      if(!game.user.isGM)return;
+      const input=event.currentTarget.closest(".dt-session-settings")
+        ?.querySelector("[data-current-session]");
+      const session=String(input?.value??"").trim().slice(0,80);
+      enqueue(()=>game.settings.set(MOD,"currentSession",session));
     });
     html.find("[data-toggle-types]").on("click",()=>{
       this.showTypes = !this.showTypes;
@@ -253,6 +295,151 @@ class Dashboard extends Application {
     html.find("[data-manage]").on("click",()=>this.historyDialog());
     html.find("[data-records]").on("click",event=>this.historyDialog(event.currentTarget.dataset.records));
   }
+
+  addPlayerDialog() {
+    if(!game.user.isGM)return;
+    const options=game.actors.filter(a=>a.type==="character")
+      .sort((a,b)=>a.name.localeCompare(b.name))
+      .map(a=>'<option value="'+safe(a.id)+'">'+safe(a.name)+'</option>').join("");
+    new Dialog({
+      title:"Add PC to Hall of Fame",
+      content:'<form class="dt-form dt-add-pc-form">'+
+        '<label>Existing player character<select name="actor">'+
+          '<option value="">Custom / manually named PC</option>'+options+'</select></label>'+
+        '<label>Custom PC name (when no Actor is selected)'+
+          '<input name="name" maxlength="100" placeholder="Character name"></label>'+
+        '<p class="notes">Adding a PC does not require any damage. It stays in the '+
+          'Player Selection roster and gets its own history.</p></form>',
+      buttons:{
+        save:{label:"Add PC",icon:'<i class="fas fa-user-plus"></i>',callback:html=>{
+          const actorId=String(html.find('[name="actor"]').val()??"");
+          const actor=game.actors.get(actorId);
+          const name=actor?.name||String(html.find('[name="name"]').val()??"").trim();
+          if(!name)return ui.notifications.warn("Choose an Actor or enter a PC name.");
+          const key=heroKey(actor?.id??"",name);
+          enqueue(async()=>{
+            const old=getRoster(),next=addHero(old,actor?.id??"",name);
+            if(next===old)ui.notifications.info("PC is already registered.");
+            else {
+              await game.settings.set(MOD,"players",next);
+              ui.notifications.info(name+" added to Damage Hall of Fame.");
+            }
+            this.playerFilter=key;
+            this.showPlayers=true;
+            this.render(false);
+          });
+        }},
+        cancel:{label:"Cancel"}
+      },default:"save"
+    },{width:460}).render(true);
+  }
+  async removePlayer(key) {
+    if(!game.user.isGM||!key)return;
+    const entry=getRoster().find(p=>heroKey(p.actorId,p.actorName)===key);
+    if(!entry)return;
+    const confirmed=await Dialog.confirm({
+      title:"Remove PC from roster?",
+      content:"Remove "+safe(entry.actorName)+" from your registered PC list? "+
+        "Damage records will NOT be deleted. PCs with saved records still "+
+        "appear in the leaderboard and player history."
+    });
+    if(!confirmed)return;
+    enqueue(async()=>{
+      await game.settings.set(MOD,"players",
+        getRoster().filter(p=>heroKey(p.actorId,p.actorName)!==key));
+      if(this.playerFilter===key)this.playerFilter="";
+      this.render(false);
+    });
+  }
+  playerHistory(key) {
+    const hero=heroRoster(getRoster(),getRecords()).find(p=>p.key===key);
+    if(!hero)return;
+    const all=recordsForHero(getRecords(),hero).sort((a,b)=>(b.date??0)-(a.date??0));
+    const groups=sessionHistory(getRecords(),hero);
+    const total=number(all.reduce((sum,r)=>sum+number(
+      Object.values(r.types??{untyped:r.damage}).reduce((n,v)=>n+number(v),0)),0));
+    const summary=groups.map(g=>
+      '<div class="dt-session-row"><div class="dt-session-title"><b>'+safe(g.session)+
+      '</b><strong>'+numeric(g.total)+' DMG</strong></div>'+
+      '<small>'+g.count+' damage '+(g.count===1?'event':'events')+
+      ' · '+safe(g.typeDetails||"Unknown damage")+'</small></div>'
+    ).join("");
+    const entries=all.slice(0,200).map(r=>{
+      const types=Object.entries(r.types??{untyped:r.damage})
+        .map(([t,v])=>(TYPE_NAMES[t]??t)+": "+numeric(v)).join(" · ");
+      const date=Number(r.date)?new Date(Number(r.date)).toLocaleDateString():"Unknown date";
+      const session=String(r.session??"");
+      const controls=game.user.isGM?
+        '<input class="dt-record-session" data-record-session="'+safe(r.id)+
+          '" maxlength="80" placeholder="Session..." value="'+safe(session)+
+          '" title="Set session for this record">'+
+        '<button type="button" data-history-edit="'+safe(r.id)+
+          '" title="Edit damage"><i class="fas fa-edit"></i></button>'+
+        '<button type="button" data-history-remove="'+safe(r.id)+
+          '" title="Delete damage"><i class="fas fa-trash"></i></button>':
+        '<small class="dt-history-session">'+safe(session||"Unassigned session")+'</small>';
+      return '<div class="dt-history-entry dt-pc-history-entry">'+
+        '<span><b>'+safe(r.note||"Applied damage")+'</b><small>'+
+        safe(date)+' · '+safe(types)+(r.round?' · Round '+safe(r.round):"")+
+        '</small></span><strong class="dt-pc-dmg">'+numeric(r.damage)+' DMG</strong>'+
+        controls+'</div>';
+    }).join("");
+    const dialog=new Dialog({
+      title:hero.actorName+" — Damage History",
+      content:'<div class="dt-pc-history">'+
+        '<div class="dt-pc-history-head"><b>'+safe(hero.actorName)+
+        '</b><span>'+numeric(total)+' total DMG · '+all.length+' entries</span></div>'+
+        '<h3>Damage by Session</h3>'+
+        '<div class="dt-session-summary">'+
+          (summary||'<p>No recorded damage yet. This PC is saved in the roster.</p>')+
+        '</div><h3>Individual Damage Events</h3>'+
+        '<div class="dt-history">'+(entries||'<p>No hits recorded.</p>')+'</div>'+
+        (all.length>200?'<p class="notes">Showing the latest 200 events.</p>':"")+
+        (game.user.isGM?'<p class="notes">GM: set a session on any event '+
+          'above or use Edit for damage details. Changes are saved to the world.</p>':"")+
+      '</div>',
+      buttons:{
+        ...(game.user.isGM?{
+          add:{label:"+ Add Damage",icon:'<i class="fas fa-plus"></i>',
+            callback:()=>this.editDialog(null,hero)}
+        }:{}),
+        close:{label:"Close"}
+      },
+      render:html=>{
+        if(!game.user.isGM)return;
+        html.find("[data-record-session]").on("change",event=>{
+          const id=event.currentTarget.dataset.recordSession;
+          const value=String(event.currentTarget.value??"").trim().slice(0,80);
+          enqueue(async()=>{
+            const records=foundry.utils.deepClone(getRecords());
+            const index=records.findIndex(r=>r.id===id);
+            if(index<0)return;
+            records[index].session=value;
+            await updateRecords(records);
+            dialog.close();
+            this.playerHistory(key);
+          });
+        });
+        html.find("[data-history-edit]").on("click",event=>{
+          const row=getRecords().find(r=>r.id===event.currentTarget.dataset.historyEdit);
+          dialog.close();
+          if(row)this.editDialog(row);
+        });
+        html.find("[data-history-remove]").on("click",async event=>{
+          const id=event.currentTarget.dataset.historyRemove;
+          if(!await Dialog.confirm({
+            title:"Delete damage record?",
+            content:"Delete this saved damage event permanently?"
+          }))return;
+          await enqueue(()=>updateRecords(getRecords().filter(r=>r.id!==id)));
+          dialog.close();
+          this.playerHistory(key);
+        });
+      }
+    },{width:720});
+    dialog.render(true);
+  }
+
   portraitDialog(key) {
     if (!game.user.isGM || !key) return;
     const current = String(getPortraits()[key] ?? "");
@@ -295,11 +482,15 @@ class Dashboard extends Application {
     },{width:440}).render(true);
   }
 
-  editDialog(existing = null) {
+  editDialog(existing = null, heroOverride = null) {
     if (!game.user.isGM) return;
+    const selected=heroOverride??heroRoster(getRoster(),getRecords())
+      .find(h=>h.key===this.playerFilter);
+    const initialActorId=existing?.actorId??selected?.actorId??"";
+    const initialActorName=existing?.actorName??selected?.actorName??"";
     const options=game.actors.filter(validActor).sort((a,b)=>a.name.localeCompare(b.name))
       .map(a=>'<option value="'+safe(a.id)+'" '+
-      (existing?.actorId===a.id?"selected":"")+">"+safe(a.name)+"</option>").join("");
+      (initialActorId===a.id?"selected":"")+">"+safe(a.name)+"</option>").join("");
     const existingType=Object.keys(existing?.types ?? {})[0] ?? UNKNOWN;
     const typeOptions=ALL_TYPES.map(t=>'<option value="'+t+'" '+
       (existingType === t?"selected":"")+">"+TYPE_NAMES[t]+"</option>").join("");
@@ -308,10 +499,12 @@ class Dashboard extends Application {
     const round=existing?.round ?? (combat?.started ? combat.round : "");
     const content='<form class="dt-form">'+
       '<label>Actor<select name="actor"><option value="">Manual name</option>'+options+'</select></label>'+
-      '<label>Manual name<input name="name" value="'+safe(existing?.actorName)+'"></label>'+
+      '<label>Manual name<input name="name" value="'+safe(initialActorName)+'"></label>'+
       '<label>Damage<input name="damage" type="number" step="0.01" min="0.01" value="'+safe(existing?.damage)+'"></label>'+
       '<label>Damage type<select name="type">'+typeOptions+'</select></label>'+
       '<label>Attack / notes<input name="note" maxlength="120" value="'+safe(existing?.note)+'"></label>'+
+      '<label>Session (set by GM)<input name="session" maxlength="80" placeholder="e.g. Session 12" value="'+
+        safe(existing?.session??getCurrentSession())+'"></label>'+
       '<div class="dt-form-two"><label>Combat ID<input name="combat" value="'+safe(combatId)+'"></label>'+
       '<label>Round<input name="round" type="number" min="1" step="1" value="'+safe(round)+'"></label></div>'+
       '<p class="notes">Manual edits replace an event with one selected damage type. Mixed-type automatic records should normally be left unchanged.</p></form>';
@@ -333,7 +526,8 @@ class Dashboard extends Application {
             actorId:actor?.id ?? "",actorName:name,damage,types:{[type]:damage},
             note:value("note")||"Manual record",critical:existing?.critical??false,
             formula:existing?.formula??"",date:existing?.date??Date.now(),
-            combatId:round?value("combat"):"",round,manualOverride:true
+            combatId:round?value("combat"):"",round,
+            session:value("session").slice(0,80),manualOverride:true
           };
           enqueue(async()=>{
             const all=foundry.utils.deepClone(getRecords());
@@ -389,6 +583,13 @@ Hooks.once("init",()=>{
   game.settings.register(MOD,"portraits",{
     name:"Hall of Fame Artwork",
     scope:"world",config:false,type:Object,default:{},onChange:refresh
+  });
+  game.settings.register(MOD,"players",{
+    name:"Registered PCs",scope:"world",config:false,type:Array,default:[],onChange:refresh
+  });
+  game.settings.register(MOD,"currentSession",{
+    name:"Current damage session",scope:"world",config:false,
+    type:String,default:"",onChange:refresh
   });
   game.settings.register(MOD,"trackingEnabled",{
     name:"Automatic tracking",hint:"Can also be toggled inside the Hall of Fame window.",

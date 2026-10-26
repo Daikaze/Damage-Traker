@@ -15,6 +15,7 @@ jobs:
           node --check scripts/core.mjs
           node --check scripts/main.mjs
           node --check scripts/applied.mjs
+          node --check scripts/roster.mjs
           node --test tests/core.test.mjs
           python3 -m json.tool module.json > /dev/null
       - name: Pack Foundry module

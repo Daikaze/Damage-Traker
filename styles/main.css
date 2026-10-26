@@ -213,3 +213,124 @@
   text-align: center;
   color: #ada5a3;
 }
+
+/* v1.0.5 — player selection, permanently saved PC roster and session history */
+.damage-hall-app .dt-filters{flex-wrap:wrap;justify-content:flex-end;}
+.damage-hall-app .dt-filters select[data-player-filter]{
+  width:142px;max-width:180px;border-color:#75634e;color:#f6dfc0;
+}
+.damage-hall-app .dt-tabs .dt-players-tab,
+.damage-hall-app .dt-tabs .dt-add-pc-btn{
+  height:34px;width:auto;padding:0 10px;border:1px solid #55483e;
+  background:#2d2930;color:#e9d2b1;white-space:nowrap;
+}
+.damage-hall-app .dt-tabs .dt-add-pc-btn{border-color:#9c7948;background:#473728;color:#ffe0a4;}
+.damage-hall-app .dt-tabs .dt-view-pc-btn{
+  height:34px;min-width:34px;width:34px;padding:0;border:1px solid #5c5263;
+  background:#292735;color:#e5c28d;
+}
+.damage-hall-app .dt-tabs .dt-view-pc-btn:disabled{opacity:.4;cursor:default;}
+.damage-hall-app .dt-filter-divider{display:inline-block;height:26px;border-left:1px solid #4f4656;margin:0 2px;}
+.damage-hall-app .dt-player-panel{
+  margin:10px 18px 0;padding:13px 14px;border:1px solid #534a53;
+  border-radius:9px;background:linear-gradient(135deg,#24232f,#20202b);
+}
+.damage-hall-app .dt-player-panel-title{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px;}
+.damage-hall-app .dt-player-panel-title b{color:#f1cd92;}
+.damage-hall-app .dt-player-panel-title small{color:#aaa3b1;font-size:11px;}
+.damage-hall-app .dt-player-list{display:flex;gap:8px;overflow-x:auto;padding:4px 0 8px;}
+.damage-hall-app .dt-player-item{
+  display:flex;align-items:center;flex:none;max-width:185px;border:1px solid #50495b;
+  border-radius:8px;background:#2b2a3a;overflow:hidden;
+}
+.damage-hall-app .dt-player-item.is-selected{border-color:#d9a65f;box-shadow:0 0 0 1px #d9a65f55;}
+.damage-hall-app .dt-player-card{
+  display:flex;align-items:center;gap:7px;min-width:0;max-width:165px;
+  width:auto;height:40px;margin:0;padding:4px 9px;box-shadow:none;border:0;
+  background:transparent;color:#ece2d7;cursor:pointer;
+}
+.damage-hall-app .dt-player-card img{
+  width:28px;height:28px;flex:none;border-radius:6px;object-fit:cover;
+}
+.damage-hall-app .dt-player-card span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.damage-hall-app .dt-player-card i{color:#ddbb8b;}
+.damage-hall-app .dt-player-card:hover{color:#f6cc87;}
+.damage-hall-app .dt-remove-pc{
+  flex:none;width:23px;height:28px;padding:0;margin-right:3px;border:0;
+  color:#aea2a7;background:transparent;box-shadow:none;font-size:11px;
+}
+.damage-hall-app .dt-remove-pc:hover{color:#ffbaba;}
+.damage-hall-app .dt-players-empty{margin:0;color:#aaa8b1;font-size:12px;}
+.damage-hall-app .dt-session-settings{
+  display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+  border-top:1px solid #484353;padding-top:12px;margin-top:10px;
+}
+.damage-hall-app .dt-session-settings label{color:#f0ddc5;font-weight:bold;font-size:12px;}
+.damage-hall-app .dt-session-settings label small{color:#aea4ad;font-weight:normal;}
+.damage-hall-app .dt-session-settings input{
+  flex:1;min-width:145px;max-width:260px;height:31px;
+  border:1px solid #716271;border-radius:6px;background:#191923;color:#fff;
+  padding:0 9px;
+}
+.damage-hall-app .dt-session-settings button{
+  flex:none;width:auto;height:31px;border:1px solid #bc9559;border-radius:6px;
+  padding:0 10px;background:#4d3a2d;color:#f5d49f;box-shadow:none;
+}
+.damage-hall-app .dt-selected-pc{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  flex-wrap:wrap;margin:12px 19px -6px;padding:10px 13px;
+  border:1px solid #4b4657;border-radius:8px;background:#252332;
+}
+.damage-hall-app .dt-selected-pc span{font-weight:bold;color:#f4d9b3;}
+.damage-hall-app .dt-selected-pc button,.damage-hall-app .dt-zero-history{
+  width:auto;height:31px;padding:0 11px;border:1px solid #806546;
+  background:#3a302c;color:#f6d9a9;border-radius:6px;box-shadow:none;
+}
+.damage-hall-app .dt-champion-link{
+  display:block;border:none;padding:0;margin:0;width:auto;height:auto;
+  box-shadow:none;background:transparent;text-align:left;position:relative;z-index:2;
+}
+.damage-hall-app .dt-champion-link:hover h2{text-decoration:underline;text-decoration-color:#a88557;}
+.damage-hall-app .dt-hero-link{
+  background:transparent;color:inherit;border:0;box-shadow:none;
+  text-align:left;width:100%;height:auto;min-height:20px;padding:0;margin:0;
+  display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  cursor:pointer;
+}
+.damage-hall-app .dt-hero-link:hover b{text-decoration:underline;color:#f4cf90;}
+.dt-pc-history{color:#dcd7dc;font-size:12px;}
+.dt-pc-history h3{color:#f3d39b;font:700 13px Signika,Arial,sans-serif;margin:12px 0 9px;}
+.dt-pc-history-head{
+  display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  padding:11px;background:#292735;border:1px solid #4d4857;border-radius:8px;
+}
+.dt-pc-history-head b{color:#ffe1aa;font-size:16px;}
+.dt-pc-history-head span{font-weight:bold;color:#ead6b8;}
+.dt-session-summary{max-height:200px;overflow-y:auto;border:1px solid #4a4550;border-radius:7px;padding:0 10px;}
+.dt-session-summary>p{color:#aca5b3;font-size:12px;}
+.dt-session-row{border-bottom:1px solid #47414c;padding:9px 0;}
+.dt-session-row:last-child{border-bottom:0;}
+.dt-session-title{display:flex;justify-content:space-between;gap:9px;align-items:center;}
+.dt-session-title b{color:#f1e3d7;}
+.dt-session-title strong{color:#f3c787;white-space:nowrap;}
+.dt-session-row small{display:block;margin-top:5px;font-size:11px;line-height:1.4;color:#a9a8b4;overflow-wrap:anywhere;}
+.dt-pc-history-entry{flex-wrap:wrap;padding:9px 2px;}
+.dt-pc-history-entry>span{min-width:140px;flex:1 1 170px;}
+.dt-pc-history-entry small{white-space:normal;overflow-wrap:anywhere;}
+.dt-pc-history-entry .dt-pc-dmg{color:#eec587;white-space:nowrap;min-width:66px;text-align:right;}
+.dt-pc-history-entry .dt-record-session{
+  width:106px;max-width:130px;min-width:70px;height:29px;margin:0;
+  background:#252632;color:#f4e9dd;border:1px solid #706271;
+  border-radius:5px;padding:0 6px;flex:0 1 106px;
+}
+.dt-pc-history-entry .dt-history-session{color:#d2b58b;}
+.dt-pc-history-entry>button{
+  width:28px;min-width:28px;height:28px;flex:0 0 28px;margin:0;
+  border-radius:5px;border:1px solid #69606c;background:#292735;
+  color:#f0dfca;box-shadow:none;padding:0;
+}
+.dt-pc-history .dt-history{max-height:260px;}
+@media(max-width:900px){
+  .damage-hall-app .dt-tabs{justify-content:center;}
+  .damage-hall-app .dt-filters{justify-content:center;}
+}
