@@ -59,7 +59,7 @@ async function flush(){
 }
 test("native V14 version and independent branch distribution",()=>{
   const module=JSON.parse(readFileSync(new URL("../module.json",import.meta.url)));
-  assert.equal(module.version,"14.1.0");
+  assert.equal(module.version,"14.1.1");
   assert.equal(module.id,"damage-traker");
   assert.equal(module.compatibility.verified,"14");
   assert.equal(module.relationships.systems[0].compatibility.verified,"6.0.6");
