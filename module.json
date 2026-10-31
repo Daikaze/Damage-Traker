@@ -2,7 +2,7 @@
   "id": "damage-traker",
   "title": "Damage Hall of Fame",
   "description": "Damage Hall of Fame for Foundry V14 and D&D5e 6.0.6: native UI, GM-only applied damage tracking, combat round records, PC roster and session history.",
-  "version": "14.1.0",
+  "version": "14.1.1",
   "authors": [
     {
       "name": "Daikaze"
@@ -34,5 +34,5 @@
   ],
   "url": "https://github.com/Daikaze/Damage-Traker",
   "manifest": "https://raw.githubusercontent.com/Daikaze/Damage-Traker/foundry-v14/module.json",
-  "download": "https://github.com/Daikaze/Damage-Traker/releases/download/v14.1.0/damage-hall-of-fame-v14.zip"
+  "download": "https://github.com/Daikaze/Damage-Traker/releases/download/v14.1.1/damage-hall-of-fame-v14.zip"
 }
