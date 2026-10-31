@@ -45,7 +45,7 @@ class HallOfFame extends HandlebarsApplicationMixin(ApplicationV2) {
     if(this.selected&&!hero)this.selected="";
     const filtered=recordsForHero(records,hero);
     const ranks=leaderboard(filtered,this.metric,this.filter).map(r=>({
-      ...r,amountText:fmt(r.amount),portrait:portrait(r.actorId,r.actorName)
+      ...r,amountText:fmt(r.amount),portrait:portrait(r.actorId,r.actorName),heroKey:heroKey(r.actorId,r.actorName)
     }));
     const types=ALL_TYPES.map(t=>({id:t,label:TYPE_NAMES[t],selected:this.filter===t,checked:(get("enabledTypes")??ALL_TYPES).includes(t)}));
     const history=hero?[...filtered].sort((a,b)=>(b.date??0)-(a.date??0)).slice(0,150).map(r=>({
@@ -70,7 +70,7 @@ class HallOfFame extends HandlebarsApplicationMixin(ApplicationV2) {
         {id:"total",label:"Total Damage",selected:this.metric==="total"},
         {id:"round",label:"Best Round",selected:this.metric==="round"}],
       types,allSelected:this.filter==="all",allTypeOptions:ALL_TYPES.map(t=>({id:t,label:TYPE_NAMES[t],selected:t===editingType})),
-      rosterActors:worlds().map(a=>({id:a.id,name:a.name})),
+      rosterActors:worlds().map(a=>({id:a.id,name:a.name,selected:a.id===initial.actorId})),
       editing:!!chosen,edit:initial,
       totalEvents:records.length,heroCount:heroes.length,
       canViewHistory:!!hero,busy:this.busy
@@ -111,6 +111,11 @@ class HallOfFame extends HandlebarsApplicationMixin(ApplicationV2) {
   _refresh(){return this.render({force:true});}
   async _write(key,value){if(!game.user.isGM||this.busy)return;this.busy=true;try{await game.settings.set(MOD,key,value);}finally{this.busy=false;await this._refresh();}}
   async _handle(action,button,root){
+    if(action.startsWith("metric-")){
+      const metric=action.slice(7);
+      if(["hit","total","round"].includes(metric)){this.metric=metric;this._scrollTop=0;await this._refresh();}
+      return;
+    }
     if(action==="view-history"){if(this.selected){this.view="history";this._scrollTop=0;await this._refresh();}return;}
     if(action==="view-board"){this.view="board";this._scrollTop=0;await this._refresh();return;}
     if(action==="open-hero"){this.selected=button.dataset.key;this.view="history";this._scrollTop=0;await this._refresh();return;}
