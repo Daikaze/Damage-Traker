@@ -133,3 +133,37 @@ test("only primary GM writes; auto setting disables new record capture",async()=
   assert.equal(writeCount,previous);
   game.user=gm;
 });
+
+
+test("native leaderboard opens with correct context, metric switch and PC session history",async()=>{
+  const app=await game.modules.get("damage-traker").api.open();
+  assert.ok(app.rendered);
+  const data=await app._prepareContext({});
+  assert.equal(data.rankRows[0].actorName,"Rashira");
+  assert.equal(data.totalEvents,2);
+  assert.ok(data.heroOptions.some(h=>h.actorName==="Rashira"));
+  await app._handle("metric-total",{},null);
+  assert.equal(app.metric,"total");
+  app.selected="id:pc";
+  await app._handle("view-history",{},null);
+  const history=await app._prepareContext({});
+  assert.equal(history.showHistory,true);
+  assert.equal(history.history.length,2);
+  assert.ok(history.sessions.some(s=>s.session==="Session 26"));
+});
+test("GM manual edits retain old world records and only save provided fields",async()=>{
+  const app=await game.modules.get("damage-traker").api.open();
+  app.editId=null;
+  await app._saveRecord({elements:{
+    actor:{value:"pc"},name:{value:"Rashira"},damage:{value:"14"},
+    type:{value:"fire"},note:{value:"Manual hit"},session:{value:"Session 26"},
+    combatId:{value:"battle"},round:{value:"3"}
+  }});
+  const records=settings.get("records");
+  assert.equal(records.length,3);
+  const added=records.find(r=>r.note==="Manual hit");
+  assert.equal(added.actorId,"pc");
+  assert.equal(added.types.fire,14);
+  assert.equal(added.round,3);
+  assert.equal(added.manualOverride,true);
+});
