@@ -1,35 +1,73 @@
-name: Test and release Foundry V11 module
+name: Validate and Publish Damage Hall of Fame V14
 on:
   push:
-    branches: [main]
+    branches: [foundry-v14]
+    paths:
+      - "module.json"
+      - "scripts/**"
+      - "styles/v14.css"
+      - "templates/v14-window.hbs"
+      - "tests/**"
+      - ".github/workflows/release.yml"
+  pull_request:
+    branches: [foundry-v14]
   workflow_dispatch:
 permissions:
   contents: write
 jobs:
-  release:
+  package:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Syntax checks and unit tests
+      - name: Validate code and applied-damage regression tests
         run: |
+          set -euo pipefail
+          node --check scripts/v14-main.mjs
+          node --check scripts/v14-applied.mjs
           node --check scripts/core.mjs
-          node --check scripts/main.mjs
-          node --check scripts/applied.mjs
           node --check scripts/roster.mjs
           node --test tests/*.test.mjs
-          python3 -m json.tool module.json > /dev/null
-      - name: Pack Foundry module
+      - name: Package V14 module
         run: |
-          zip -r damage-traker.zip module.json scripts templates styles -x '*/.*'
-          unzip -l damage-traker.zip
-      - name: Publish ZIP
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, pathlib, zipfile
+          module=json.loads(pathlib.Path("module.json").read_text())
+          assert module["version"].startswith("14.")
+          assert module["compatibility"]["verified"]=="14"
+          assert module["manifest"].endswith("/foundry-v14/module.json")
+          assert module["relationships"]["systems"][0]["compatibility"]["verified"]=="6.0.6"
+          files=[
+            "module.json","README.md","scripts/v14-main.mjs","scripts/v14-applied.mjs",
+            "scripts/core.mjs","scripts/roster.mjs","scripts/portraits.mjs",
+            "templates/v14-window.hbs","styles/v14.css"
+          ]
+          expected=f"https://github.com/Daikaze/Damage-Traker/releases/download/v{module['version']}/damage-hall-of-fame-v14.zip"
+          assert module["download"]==expected
+          with zipfile.ZipFile("damage-hall-of-fame-v14.zip","w",zipfile.ZIP_DEFLATED) as archive:
+            for filename in files:
+              assert pathlib.Path(filename).is_file(),filename
+              archive.write(filename)
+          with zipfile.ZipFile("damage-hall-of-fame-v14.zip") as archive:
+            assert archive.testzip() is None
+            assert json.loads(archive.read("module.json"))==module
+            for name in module["esmodules"]+module["styles"]:assert name in archive.namelist()
+          print("V14 module ZIP verified")
+          PY
+      - name: Publish dedicated V14 release
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/foundry-v14'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          VERSION=$(node -p "require('./module.json').version")
-          TAG="v$VERSION"
+          set -euo pipefail
+          VERSION="$(node -p "require('./module.json').version")"
+          TAG="v${VERSION}"
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" damage-traker.zip --clobber
-          else
-            gh release create "$TAG" damage-traker.zip --title "Damage Hall of Fame $TAG (Foundry V11)" --notes "Damage leaderboard with GM tracking switch and all 13 damage types" --target "$GITHUB_SHA"
+            echo "Release $TAG already exists; refusing to overwrite immutable archive" >&2
+            exit 1
           fi
+          gh release create "$TAG" damage-hall-of-fame-v14.zip module.json \
+            --target "$GITHUB_SHA" \
+            --title "Damage Hall of Fame $TAG (Foundry V14 / D&D5e 6.0.6)" \
+            --notes "Separate Foundry V14 version with native ApplicationV2 UI and confirmed post-applied damage capture. V11 main branch preserved." \
+            --latest=false
