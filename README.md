@@ -1,4 +1,4 @@
-# Damage Hall of Fame — Foundry V14
+# Damage Hall of Fame — Foundry V14 (v14.1.1)
 
 > **Separate V14 branch.** The `main` branch remains **Foundry V11 v1.0.6**, unchanged.
 
@@ -37,7 +37,7 @@ This branch uses the same module id (`damage-traker`) and legacy world-setting k
 
 ## Release
 
-The V14 branch has its own GitHub Actions workflow and tagged ZIP `v14.1.0`.
+The V14 branch has its own GitHub Actions workflow and tagged ZIP `v14.1.1`.
 Its manifest URL stays on `foundry-v14` and the download points to the immutable
 release ZIP. The V11 main manifest and V11 releases are untouched.
 
