@@ -87,7 +87,7 @@
         <form data-hof-form="edit" class="dt14-edit-form">
           <label>PC<select name="actor"><option value="">Use manual name</option>
             {{#each rosterActors}}
-              <option value="{{id}}" {{#if (eq id ../edit.actorId)}}selected{{/if}}>{{name}}</option>
+              <option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>
             {{/each}}
           </select></label>
           <label>Character name<input name="name" maxlength="100" value="{{edit.actorName}}" required></label>
@@ -171,7 +171,7 @@
             <h3><i class="fa-solid fa-list-ol"></i> Leaderboard</h3>
             <div class="dt14-leaders">
               {{#each rankRows}}
-                <button type="button" class="dt14-leader" data-hof-action="open-hero" data-key="{{#if actorId}}id:{{actorId}}{{else}}name:{{actorName}}{{/if}}">
+                <button type="button" class="dt14-leader" data-hof-action="open-hero" data-key="{{heroKey}}">
                   <span class="dt14-rank">#{{rank}}</span>
                   {{#if portrait}}<img src="{{portrait}}" alt="">{{/if}}
                   <span class="dt14-leader-name"><b>{{actorName}}</b><small>{{detail}}</small></span>
