@@ -1,0 +1,196 @@
+<section class="dt14">
+  <header class="dt14-header">
+    <div class="dt14-heading">
+      <h2><i class="fa-solid fa-trophy"></i> Damage Hall of Fame</h2>
+      <small>{{totalEvents}} applied events · {{heroCount}} heroes</small>
+    </div>
+    <div class="dt14-header-actions">
+      {{#if isGM}}
+        <label class="dt14-toggle"><input type="checkbox" data-hof-tracking {{#if tracking}}checked{{/if}}> Automatic Tracking</label>
+        <button type="button" data-hof-action="toggle-roster"><i class="fa-solid fa-users"></i> PCs</button>
+        <button type="button" data-hof-action="toggle-types"><i class="fa-solid fa-sliders"></i> Types</button>
+      {{else}}
+        <small><i class="fa-solid fa-eye"></i> Read Only</small>
+      {{/if}}
+    </div>
+  </header>
+  <div class="dt14-toolbar">
+    <label class="dt14-player-select">Player
+      <select data-hof-player>
+        <option value="" {{#unless selectedHero}}selected{{/unless}}>All heroes</option>
+        {{#each heroOptions}}
+          <option value="{{key}}" {{#if selected}}selected{{/if}}>{{actorName}}</option>
+        {{/each}}
+      </select>
+    </label>
+    <div class="dt14-metrics" role="group" aria-label="Damage metric">
+      {{#each metrics}}
+        <button type="button" data-hof-action="metric-{{id}}" class="{{#if selected}}dt14-active{{/if}}" {{#if selected}}aria-pressed="true"{{else}}aria-pressed="false"{{/if}}>{{label}}</button>
+      {{/each}}
+    </div>
+    <label>Damage Type
+      <select data-hof-type>
+        <option value="all" {{#if allSelected}}selected{{/if}}>All Types</option>
+        {{#each types}}
+          <option value="{{id}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+        {{/each}}
+      </select>
+    </label>
+    {{#if canViewHistory}}
+      <button type="button" data-hof-action="{{#if showHistory}}view-board{{else}}view-history{{/if}}"><i class="fa-solid fa-clock-rotate-left"></i> {{#if showHistory}}Leaderboard{{else}}PC History{{/if}}</button>
+    {{/if}}
+    {{#if isGM}}<button type="button" data-hof-action="new-record"><i class="fa-solid fa-plus"></i> Add Damage</button>{{/if}}
+  </div>
+  <div class="dt14-body">
+    {{#if showRoster}}
+      {{#if isGM}}
+        <section class="dt14-panel">
+          <h3>Register Player Character</h3>
+          <form data-hof-form="roster" class="dt14-form-inline">
+            <label>World PC<select name="actor"><option value="">Custom name</option>
+              {{#each rosterActors}}<option value="{{id}}">{{name}}</option>{{/each}}
+            </select></label>
+            <label>Custom name<input name="name" maxlength="100" placeholder="Character name"></label>
+            <button type="submit"><i class="fa-solid fa-user-plus"></i> Add PC</button>
+          </form>
+          <p class="notes">Registering a character does not require any damage. Recorded history remains after removing a PC from the roster.</p>
+          <div class="dt14-roster">
+            {{#each heroOptions}}
+              <div class="dt14-roster-row">
+                <span>{{actorName}}</span>
+                <button type="button" data-hof-action="open-hero" data-key="{{key}}"><i class="fa-solid fa-clock-rotate-left"></i> History</button>
+                <button type="button" data-hof-action="remove-hero" data-key="{{key}}" aria-label="Remove {{actorName}} from roster"><i class="fa-solid fa-trash"></i></button>
+              </div>
+            {{/each}}
+          </div>
+        </section>
+      {{/if}}
+    {{/if}}
+
+    {{#if showTypes}}
+      {{#if isGM}}
+        <section class="dt14-panel">
+          <h3>Damage Type Tracking</h3>
+          <p class="notes">Disabling a damage type affects future events only. Unknown/mixed damage is tracked under Other / Unknown unless an exact applied breakdown is available.</p>
+          <div class="dt14-types">
+            {{#each types}}
+              <label><input type="checkbox" data-hof-enabled="{{id}}" {{#if checked}}checked{{/if}}> {{label}}</label>
+            {{/each}}
+          </div>
+        </section>
+      {{/if}}
+    {{/if}}
+
+    {{#if showEdit}}
+      <section class="dt14-panel">
+        <h3>{{#if editing}}Edit Applied Damage{{else}}Add Manual Damage{{/if}}</h3>
+        <form data-hof-form="edit" class="dt14-edit-form">
+          <label>PC<select name="actor"><option value="">Use manual name</option>
+            {{#each rosterActors}}
+              <option value="{{id}}" {{#if (eq id ../edit.actorId)}}selected{{/if}}>{{name}}</option>
+            {{/each}}
+          </select></label>
+          <label>Character name<input name="name" maxlength="100" value="{{edit.actorName}}" required></label>
+          <label>Applied damage<input type="number" name="damage" min="0.01" max="999999" step="0.01" value="{{edit.damage}}" required></label>
+          <label>Type<select name="type">
+            {{#each allTypeOptions}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+          </select></label>
+          <label class="dt14-span">Attack / notes<input name="note" maxlength="120" value="{{edit.note}}"></label>
+          <label>Session<input name="session" maxlength="80" value="{{edit.session}}"></label>
+          <label>Combat ID<input name="combatId" value="{{edit.combatId}}"></label>
+          <label>Round<input name="round" type="number" min="1" step="1" value="{{edit.round}}"></label>
+          <div class="dt14-buttons dt14-span">
+            <button type="submit"><i class="fa-solid fa-floppy-disk"></i> Save Record</button>
+            <button type="button" data-hof-action="cancel-edit">Cancel</button>
+          </div>
+        </form>
+        <p class="notes">Manual entries always represent applied damage. Multiple damage types in a recorded event are preserved until manually edited.</p>
+      </section>
+    {{else}}
+      {{#if showHistory}}
+        <section class="dt14-panel">
+          <div class="dt14-panel-heading">
+            <div class="dt14-hero-title">
+              {{#if heroPortrait}}<img src="{{heroPortrait}}" alt="{{selectedHero.actorName}}">{{/if}}
+              <div><h3>{{selectedHero.actorName}} — Damage History</h3><small>Session summaries and individual applied events</small></div>
+            </div>
+            <button type="button" data-hof-action="view-board"><i class="fa-solid fa-arrow-left"></i> Back</button>
+          </div>
+          {{#if isGM}}
+            <form data-hof-form="portrait" class="dt14-form-inline">
+              <label class="dt14-grow">Custom portrait<input name="portrait" value="{{heroPortrait}}" maxlength="2048" placeholder="Foundry image path"></label>
+              <button type="submit"><i class="fa-solid fa-image"></i> Save Art</button>
+            </form>
+          {{/if}}
+          <h4>Sessions</h4>
+          <div class="dt14-session-list">
+            {{#each sessions}}
+              <div class="dt14-session">
+                <strong>{{session}}</strong><span>{{totalText}} DMG · {{count}} events</span>
+                <small>{{typeDetails}}</small>
+              </div>
+            {{else}}<p class="notes">No recorded damage for this character.</p>{{/each}}
+          </div>
+          <h4>Applied Damage Events</h4>
+          <div class="dt14-events">
+            {{#each history}}
+              <div class="dt14-event">
+                <div class="dt14-event-main">
+                  <strong>{{note}}</strong><small>{{dateText}} · {{typeText}} · {{roundText}}</small>
+                </div>
+                <b>{{amountText}} DMG</b>
+                {{#if ../isGM}}
+                  <label>Session<input data-record-session="{{id}}" value="{{sessionText}}" maxlength="80" placeholder="Session"></label>
+                  <button type="button" data-hof-action="save-record-session" data-id="{{id}}" title="Save session"><i class="fa-solid fa-floppy-disk"></i></button>
+                  <button type="button" data-hof-action="edit-record" data-id="{{id}}" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                  <button type="button" data-hof-action="delete-record" data-id="{{id}}" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                {{else}}
+                  <small>{{sessionText}}</small>
+                {{/if}}
+              </div>
+            {{else}}<p class="notes">No applied damage events yet.</p>{{/each}}
+          </div>
+          {{#if hasHistory}}<p class="notes">Showing up to 150 latest events.</p>{{/if}}
+        </section>
+      {{else}}
+        <div class="dt14-grid">
+          <section class="dt14-panel dt14-top-record">
+            <h3><i class="fa-solid fa-trophy"></i> Top Record</h3>
+            {{#if leader}}
+              <div class="dt14-top-character">
+                {{#if leader.portrait}}<img src="{{leader.portrait}}" alt="{{leader.actorName}}">{{/if}}
+                <strong>{{leader.actorName}}</strong>
+              </div>
+              <div class="dt14-big-number">{{leader.amountText}} <small>DMG</small></div>
+              <p class="notes">{{leader.detail}}</p>
+            {{else}}
+              <p class="notes">No applied damage records for this selection.</p>
+            {{/if}}
+          </section>
+          <section class="dt14-panel">
+            <h3><i class="fa-solid fa-list-ol"></i> Leaderboard</h3>
+            <div class="dt14-leaders">
+              {{#each rankRows}}
+                <button type="button" class="dt14-leader" data-hof-action="open-hero" data-key="{{#if actorId}}id:{{actorId}}{{else}}name:{{actorName}}{{/if}}">
+                  <span class="dt14-rank">#{{rank}}</span>
+                  {{#if portrait}}<img src="{{portrait}}" alt="">{{/if}}
+                  <span class="dt14-leader-name"><b>{{actorName}}</b><small>{{detail}}</small></span>
+                  <strong>{{amountText}}</strong>
+                </button>
+              {{else}}<p class="notes">No damage recorded. Select a PC or add an applied-damage event.</p>{{/each}}
+            </div>
+          </section>
+        </div>
+      {{/if}}
+    {{/if}}
+    {{#if isGM}}
+      <section class="dt14-panel dt14-session-footer">
+        <form data-hof-form="session" class="dt14-form-inline">
+          <label>Current Session<input name="session" value="{{currentSession}}" maxlength="80" placeholder="e.g. Session 26"></label>
+          <button type="submit"><i class="fa-solid fa-floppy-disk"></i> Set Session</button>
+        </form>
+        <small>Newly applied events are automatically assigned to this session.</small>
+      </section>
+    {{/if}}
+  </div>
+</section>
